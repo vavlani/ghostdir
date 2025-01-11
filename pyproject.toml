@@ -4,10 +4,9 @@ version = "0.1.0"
 description = "Directory tree command generator from markdown"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = [{include = "ghostdir"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+python = "^3.9"
 streamlit = "^1.28.0"
 pathlib = "^1.0.1"
 
@@ -18,11 +17,3 @@ black = "^23.10.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-
-[tool.black]
-line-length = 88
-target-version = ['py39']

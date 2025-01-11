@@ -5,11 +5,12 @@ secondaryBackgroundColor = "#f0f2f6"
 textColor = "#262730"
 
 [server]
-port = 8501
-address = "localhost"
+headless = true
 
 [browser]
 gatherUsageStats = false
+serverAddress = "0.0.0.0"
+serverPort = 8501
 
 [ui]
 hideTopBar = true
