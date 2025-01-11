@@ -1,0 +1,18 @@
+[theme]
+primaryColor = "#4287f5"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+
+[server]
+port = 8501
+address = "localhost"
+
+[browser]
+gatherUsageStats = false
+
+[ui]
+hideTopBar = true
+
+[logger]
+level = "info"
