@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "dirtree"
+name = "ghostdir"
 version = "0.1.0"
 description = "Directory tree command generator from markdown"
 authors = ["Your Name <your.email@example.com>"]
