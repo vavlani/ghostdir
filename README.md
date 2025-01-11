@@ -1,0 +1,1 @@
+# ghostdir
