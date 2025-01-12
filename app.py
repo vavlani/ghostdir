@@ -2,6 +2,7 @@ import streamlit as st
 from pathlib import Path
 from generator import generate_directory_commands, generate_tree_representation, SafetyViolation
 
+# Configure the page
 st.set_page_config(
     page_title="Directory Tree Generator",
     page_icon="🌳",
@@ -9,7 +10,8 @@ st.set_page_config(
 )
 
 # Example tree structures
-PYTHON_PROJECT_EXAMPLE = """python_package/
+EXAMPLES = {
+    "Python Package": """python_package/
 ├── src/
 │   ├── __init__.py
 │   ├── core/
@@ -25,9 +27,9 @@ PYTHON_PROJECT_EXAMPLE = """python_package/
 ├── docs/
 │   ├── guide.md          # User guide
 │   └── api.md            # API documentation
-└── README.md             # Project documentation"""
+└── README.md             # Project documentation""",
 
-ML_PROJECT_EXAMPLE = """ml_project/
+    "ML Project": """ml_project/
 ├── data/
 │   ├── raw/              # Original data
 │   │   └── dataset.csv
@@ -40,9 +42,9 @@ ML_PROJECT_EXAMPLE = """ml_project/
 ├── notebooks/
 │   ├── EDA.ipynb        # Exploratory analysis
 │   └── Training.ipynb    # Training notebook
-└── requirements.txt      # Project dependencies"""
+└── requirements.txt      # Project dependencies""",
 
-BACKEND_SERVICE_EXAMPLE = """backend_service/
+    "Backend Service": """backend_service/
 ├── app/
 │   ├── __init__.py
 │   ├── api/
@@ -58,109 +60,34 @@ BACKEND_SERVICE_EXAMPLE = """backend_service/
 ├── config/
 │   └── settings.py      # Configuration
 └── main.py              # Application entry point"""
+}
 
-def main():
-    # Sidebar settings
+def handle_example_button(example_name: str):
+    """Handle example button click event"""
+    if example_name in EXAMPLES:
+        st.session_state["tree_input_value"] = EXAMPLES[example_name]
+
+def render_sidebar():
+    """Render sidebar settings"""
     st.sidebar.header("Settings")
-    base_dir = st.sidebar.text_input("Base Directory", ".")
-    max_items = st.sidebar.number_input("Max Items", min_value=1, max_value=500, value=100)
-    max_depth = st.sidebar.number_input("Max Depth", min_value=1, max_value=20, value=10)
-    include_comments = st.sidebar.checkbox("Include Comments", value=True)
+    settings = {
+        "base_dir": st.sidebar.text_input("Base Directory", "."),
+        "max_items": st.sidebar.number_input("Max Items", min_value=1, max_value=500, value=100),
+        "max_depth": st.sidebar.number_input("Max Depth", min_value=1, max_value=20, value=10),
+        "include_comments": st.sidebar.checkbox("Include Comments", value=True)
+    }
+    return settings
 
-    # Main content
-    st.title("Directory Tree Generator 🌳")
-    st.markdown("""
-    Create directory structures using a tree-like format. Use the example buttons below to see different project structures,
-    or create your own using the box drawing characters (├, │, └).
-    """)
-
-    # Example buttons in columns
+def render_example_buttons():
+    """Render example buttons in columns"""
     st.subheader("📚 Load Example Structure")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        python_btn = st.button("Python Package", 
-                              help="Basic Python package structure with tests and documentation")
-    with col2:
-        ml_btn = st.button("ML Project", 
-                          help="Machine learning project with data, models, and notebooks")
-    with col3:
-        backend_btn = st.button("Backend Service", 
-                               help="Python backend service with API and database")
+    cols = st.columns(len(EXAMPLES))
+    for col, (name, _) in zip(cols, EXAMPLES.items()):
+        if col.button(name, help=f"Load {name} structure example"):
+            handle_example_button(name)
 
-    # Text area for input
-    tree_input = st.text_area(
-        "Directory Structure",
-        height=300,
-        help="Enter your directory structure using tree-command format with ├, │, └ characters",
-        font="monospace"
-    )
-
-    # Update text area based on example buttons
-    if python_btn:
-        tree_input = PYTHON_PROJECT_EXAMPLE
-    elif ml_btn:
-        tree_input = ML_PROJECT_EXAMPLE
-    elif backend_btn:
-        tree_input = BACKEND_SERVICE_EXAMPLE
-
-    # Action buttons
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("👀 Preview Structure", type="secondary"):
-            try:
-                if tree_input:
-                    tree_output = generate_tree_representation(
-                        tree_input,
-                        include_comments=include_comments
-                    )
-                    st.subheader("Preview")
-                    st.code(tree_output, language="")
-                else:
-                    st.warning("Please enter a directory structure or use an example")
-            except Exception as e:
-                st.error(f"Error generating preview: {str(e)}")
-
-    with col2:
-        if st.button("⚡ Generate Commands", type="primary"):
-            try:
-                if tree_input:
-                    commands = generate_directory_commands(tree_input)
-                    
-                    if commands:
-                        st.subheader("Generated Commands")
-                        commands_text = "\n".join(commands)
-                        st.code(commands_text, language="bash")
-                        
-                        col3, col4 = st.columns(2)
-                        with col3:
-                            st.download_button(
-                                "📥 Download Shell Script",
-                                commands_text,
-                                file_name="create_structure.sh",
-                                mime="text/plain"
-                            )
-                        with col4:
-                            st.button(
-                                "📋 Copy to Clipboard",
-                                help="Click to copy commands",
-                                on_click=lambda: st.write(
-                                    f'<script>navigator.clipboard.writeText(`{commands_text}`)</script>',
-                                    unsafe_allow_html=True
-                                )
-                            )
-                    else:
-                        st.warning("No valid structure found in input")
-                else:
-                    st.warning("Please enter a directory structure or use an example")
-                    
-            except SafetyViolation as e:
-                st.error(f"Safety check failed: {str(e)}")
-            except Exception as e:
-                st.error(f"Error generating commands: {str(e)}")
-
-    # Help section
+def render_usage_guide():
+    """Render the usage guide section"""
     with st.expander("ℹ️ Usage Guide"):
         st.markdown("""
         ### How to Use
@@ -192,6 +119,98 @@ def main():
         - Keep consistent indentation
         - Avoid special characters in names
         """)
+
+def handle_preview(tree_input: str, include_comments: bool):
+    """Handle preview button click"""
+    try:
+        if tree_input:
+            tree_output = generate_tree_representation(
+                tree_input,
+                include_comments=include_comments
+            )
+            st.subheader("Preview")
+            st.code(tree_output, language="")
+        else:
+            st.warning("Please enter a directory structure or use an example")
+    except Exception as e:
+        st.error(f"Error generating preview: {str(e)}")
+
+def handle_generate_commands(tree_input: str):
+    """Handle generate commands button click"""
+    try:
+        if tree_input:
+            commands = generate_directory_commands(tree_input)
+            
+            if commands:
+                st.subheader("Generated Commands")
+                commands_text = "\n".join(commands)
+                st.code(commands_text, language="bash")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.download_button(
+                        "📥 Download Shell Script",
+                        commands_text,
+                        file_name="create_structure.sh",
+                        mime="text/plain"
+                    )
+                with col2:
+                    st.button(
+                        "📋 Copy to Clipboard",
+                        help="Click to copy commands",
+                        on_click=lambda: st.write(
+                            f'<script>navigator.clipboard.writeText(`{commands_text}`)</script>',
+                            unsafe_allow_html=True
+                        )
+                    )
+            else:
+                st.warning("No valid structure found in input")
+        else:
+            st.warning("Please enter a directory structure or use an example")
+                
+    except SafetyViolation as e:
+        st.error(f"Safety check failed: {str(e)}")
+    except Exception as e:
+        st.error(f"Error generating commands: {str(e)}")
+
+def main():
+    # Initialize session state
+    if "tree_input_value" not in st.session_state:
+        st.session_state["tree_input_value"] = ""
+
+    # Render main interface
+    st.title("Directory Tree Generator 🌳")
+    st.markdown("""
+    Create directory structures using a tree-like format. Use the example buttons below to see different project structures,
+    or create your own using the box drawing characters (├, │, └).
+    """)
+
+    # Render components
+    settings = render_sidebar()
+    render_example_buttons()
+
+    # Text area for input
+    st.markdown("### Directory Structure:")
+    tree_input = st.text_area(
+        label="",
+        value=st.session_state["tree_input_value"],
+        height=300,
+        help="Enter your directory structure using tree-command format with ├, │, └ characters",
+        key="tree_input_area"
+    )
+
+    # Action buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("👀 Preview Structure", type="secondary"):
+            handle_preview(tree_input, settings["include_comments"])
+    
+    with col2:
+        if st.button("⚡ Generate Commands", type="primary"):
+            handle_generate_commands(tree_input)
+
+    # Usage guide
+    render_usage_guide()
 
 if __name__ == "__main__":
     main()
